@@ -13,11 +13,9 @@ int main(){
   getlogin_r(login_name,100);
   char host_name[100];
   gethostname(host_name,100);
-
   while(1){
     char currentDir [100];
     getcwd(currentDir, 100);
-
     printf("%s@%s:%s$ ",login_name, host_name, currentDir);
     char buffer[100];
     fgets(buffer, 100 , stdin);
@@ -26,6 +24,10 @@ int main(){
     char ** args = parse_args(buffer);
     if(! strcmp(args[0], "cd")){
       change_dir(args[1]);
+      continue;
+    }
+    if(! strcmp(args[0],"exit")){
+      exit(0);
       continue;
     }
     int pid = getpid();
@@ -59,3 +61,4 @@ void change_dir(char * newdir){
   char currentDir [100];
   getcwd(currentDir, 100);
 }
+
