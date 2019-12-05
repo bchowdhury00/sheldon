@@ -8,6 +8,9 @@
 
 void change_dir(char * newdir);
 char ** parse_args( char * line);
+char * processCharacters();
+void revertTermios(struct termios termy);
+void changeTermios(struct termios * termy);
 
 int main(){
   char login_name [100];
@@ -18,10 +21,8 @@ int main(){
     char currentDir [100];
     getcwd(currentDir, 100);
     printf("%s@%s:%s$ ",login_name, host_name, currentDir);
-    char buffer[100];
-    fgets(buffer, 100 , stdin);
-    buffer[strlen(buffer)-1] = 0;
 
+    char * buffer = processCharacters();
     char ** args = parse_args(buffer);
     if(! strcmp(args[0], "cd")){
       change_dir(args[1]);
@@ -40,6 +41,7 @@ int main(){
       execvp(args[0], args);
     }
     free(args);
+    free(buffer);
   }
   printf("\n");
   return 0;
@@ -62,10 +64,31 @@ void change_dir(char * newdir){
   char currentDir [100];
   getcwd(currentDir, 100);
 }
-void checkForStrokes(){
-  struct termios old,new;
-  tcsetattr(0,TCSANOW,&old);
-  new = old;
-  new.c_lflag = new.c_lflag & !ICANON;
-  tcsetattr(0, TCSANOW, &current);
+void changeTermios(struct termios *termy){
+  struct termios new;
+  tcgetattr(0,termy);
+  new = *termy;
+  new.c_lflag = new.c_lflag | ECHO & !ICANON;
+  tcsetattr(0, TCSANOW, &new);
+}
+void revertTermios(struct termios termy){
+  tcsetattr(0, TCSANOW, &termy);
+}
+char * processCharacters(){
+  char * buffer = malloc(100*sizeof(char));
+  int i =0;
+  while(1){
+    char ch;
+    struct termios goodTermy;
+    changeTermios(&goodTermy);
+    ch = getchar();
+    revertTermios(goodTermy);
+    if(ch==10)
+      break;
+    buffer[i] = ch;
+    i++;
+
+  }
+  buffer[i] = 0;
+  return buffer;
 }
