@@ -8,6 +8,9 @@
 
 void change_dir(char * newdir);
 char ** parse_args( char * line);
+int runCmd(char * buffer);
+int checkMultipleCmds(char * line);
+char ** multipleCmds(char * line);
 char * processCharacters();
 void revertTermios(struct termios termy);
 void changeTermios(struct termios * termy);
@@ -23,14 +26,33 @@ int main(){
     printf("%s@%s:%s$ ",login_name, host_name, currentDir);
 
     char * buffer = processCharacters();
-    char ** args = parse_args(buffer);
+
+    if (checkMultipleCmds(buffer)){
+      int n = 1;
+      char ** commands = multipleCmds(buffer);
+      char * current = *commands;
+      while (current != NULL){
+      	runCmd(current);
+      	current = *(commands + n);
+      	n++;
+      }
+    }
+    else
+      runCmd(buffer);
+  }
+  printf("\n");
+  return 0;
+}
+
+int runCmd(char * buffer){
+   char ** args = parse_args(buffer);
     if(! strcmp(args[0], "cd")){
       change_dir(args[1]);
-      continue;
+      return 0;
     }
     if(! strcmp(args[0],"exit")){
       exit(0);
-      continue;
+      return 0;
     }
     int pid = getpid();
     fork();
@@ -42,12 +64,9 @@ int main(){
     }
     free(args);
     free(buffer);
-  }
-  printf("\n");
-  return 0;
+    return 0;
 }
-
-char ** parse_args( char * line){
+char ** parse_args(char * line){
   char * token;
   char ** returner = malloc(6*sizeof(char *));
   int i = 0;
@@ -59,21 +78,37 @@ char ** parse_args( char * line){
   returner[i] = 0;
   return returner;
 }
+
+int checkMultipleCmds(char * line){
+  if (strchr(line,';'))
+    return 1;
+  return 0;
+}
+
+char ** multipleCmds(char * line){
+  char * token;
+  char ** returner = malloc(6*sizeof(char *));
+  int i = 0;
+  while(line){
+    token = strsep(&line,";");
+    if (*token == ' ')
+      token = token + 1;
+    returner[i] = token;
+    i++;
+  }
+  returner[i] = 0;
+  return returner;
+}
+
+
+
 void change_dir(char * newdir){
   int i = chdir(newdir);
   char currentDir [100];
   getcwd(currentDir, 100);
 }
-void changeTermios(struct termios *termy){
-  struct termios new;
-  tcgetattr(0,termy);
-  new = *termy;
-  new.c_lflag = new.c_lflag | ECHO & !ICANON;
-  tcsetattr(0, TCSANOW, &new);
-}
-void revertTermios(struct termios termy){
-  tcsetattr(0, TCSANOW, &termy);
-}
+
+
 char * processCharacters(){
   char * buffer = malloc(100*sizeof(char));
   int i =0;
@@ -91,4 +126,14 @@ char * processCharacters(){
   }
   buffer[i] = 0;
   return buffer;
+}
+void changeTermios(struct termios *termy){
+  struct termios new;
+  tcgetattr(0,termy);
+  new = *termy;
+  new.c_lflag = new.c_lflag | ECHO & !ICANON;
+  tcsetattr(0, TCSANOW, &new);
+}
+void revertTermios(struct termios termy){
+  tcsetattr(0, TCSANOW, &termy);
 }
