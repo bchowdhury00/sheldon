@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <termios.h>
 
 void change_dir(char * newdir);
 char ** parse_args( char * line);
@@ -61,4 +62,10 @@ void change_dir(char * newdir){
   char currentDir [100];
   getcwd(currentDir, 100);
 }
-
+void checkForStrokes(){
+  struct termios old,new;
+  tcsetattr(0,TCSANOW,&old);
+  new = old;
+  new.c_lflag = new.c_lflag & !ICANON;
+  tcsetattr(0, TCSANOW, &current);
+}
