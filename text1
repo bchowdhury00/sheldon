@@ -15,7 +15,6 @@ char ** multipleCmds(char * line);
 char * processCharacters();
 void revertTermios(struct termios termy);
 void changeTermios(struct termios * termy);
-void getCursorXY(int * x, int * y);
 
 int main(){
   char login_name [100];
@@ -38,7 +37,6 @@ int main(){
       	current = *(commands + n);
       	n++;
       }
-      free(commands);
     }
     else
       runCmd(buffer);
@@ -66,6 +64,7 @@ int runCmd(char * buffer){
       execvp(args[0], args);
     }
     free(args);
+    free(buffer);
     return 0;
 }
 char ** parse_args(char * line){
@@ -120,25 +119,14 @@ char * processCharacters(){
     changeTermios(&goodTermy);
     ch = getchar();
     revertTermios(goodTermy);
-    printf("%c",1);
     if(ch == 10){
       printf("%c",ch);
       break;
     }
     if (ch == 0x7f) {
-      int x1 = 69;
-      int y1 = 69;
-      int x2 = 69;
-      int y2 = 69;
-      getCursorXY(&x1,&y1);
-      printf("\b");
-      printf(" ");
-      printf("\b");
-      getCursorXY(&x2,&y2);
-      printf("x1: %d, y1: %d, x2: %d, y2: %d\n",x1,y1,x2,y2);
-      if(x1 == x2 && y2 == y1){
-        //printf("We have a problem");
-      }
+            printf("\b");
+            printf(" ");
+            printf("\b");
     }
     else if(ch==27)
         sequenceNum++;
@@ -157,8 +145,6 @@ char * processCharacters(){
       i++;
       if(! iscntrl(ch))
         printf("%c",ch);
-      else
-        printf("%d",ch);
     }
   }
   buffer[i] = 0;
@@ -168,18 +154,9 @@ void changeTermios(struct termios *termy){
   struct termios new;
   tcgetattr(0,termy);
   new = *termy;
-  new.c_lflag &= ~(ICANON | ECHO);
-  new.c_cc[VMIN] = 1;
-  new.c_cc[VTIME] = 0;
-  new.c_cflag &= ~(CREAD);
+  new.c_lflag = new.c_lflag & ~(ICANON | ECHO);
   tcsetattr(0, TCSANOW, &new);
 }
 void revertTermios(struct termios termy){
   tcsetattr(0, TCSANOW, &termy);
-}
-void getCursorXY(int * x, int * y){
-  FILE * file = fopen("cursorPosition","w+");
-  fprintf(file,"\033[6n");
-  fscanf(file, "\033[%d;%dR",x,y);
-  fclose(file);
 }
