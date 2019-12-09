@@ -28,7 +28,7 @@ int main(){
   getlogin_r(login_name,100);
   char host_name[100];
   gethostname(host_name,100);
-  
+
   FILE *commandsStream = fopen("commands","r");
   char commandList[100][100];
   int i = 0;
@@ -144,6 +144,7 @@ char * processCharacters(){
   int initialX;
   int initialY;
   struct termios goodTermy;
+
   changeTermios(&goodTermy);
   getCursorXY(&initialX,&initialY);
 
@@ -158,7 +159,6 @@ char * processCharacters(){
     printf("\033[%d;%dH", currentX,currentY);
     char ch;
     ch = getchar();
-    printf("%c",1);
     if(ch == 10){
       printf("%c",ch);
       //currentX+=1;
