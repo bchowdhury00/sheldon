@@ -8,7 +8,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <sys/ioctl.h>
-
+#include <fcntl.h>
+#include <sys/stat.h>
 
 void change_dir(char * newdir);
 char ** parse_args( char * line);
@@ -19,33 +20,55 @@ char * processCharacters();
 void revertTermios(struct termios termy);
 void changeTermios(struct termios * termy);
 void getCursorXY(int * x, int * y);
+void moveCursorRight(int * currentX, int * currentY, int totalRow, int totalCol, int  * initialX);
+int moveCursorLeft(int * currentX, int * currentY, int initialX, int initialY,int totalCol);
 
 int main(){
   char login_name [100];
   getlogin_r(login_name,100);
   char host_name[100];
   gethostname(host_name,100);
+  
+  FILE *commandsStream = fopen("commands","r");
+  char commandList[100][100];
+  int i = 0;
+  while (fgets(commandList[i], sizeof(commandList[i]), commandsStream))
+    i++;
+  fclose(commandsStream);
+
+  int commandsFile = open("commands",O_RDWR | O_CREAT | O_APPEND,0755);
   while(1){
     char currentDir [100];
     getcwd(currentDir, 100);
     printf("%s@%s:%s$ ",login_name, host_name, currentDir);
 
     char * buffer = processCharacters();
-
     if (checkMultipleCmds(buffer)){
       int n = 1;
       char ** commands = multipleCmds(buffer);
       char * current = *commands;
       while (current != NULL){
       	runCmd(current);
+        write(commandsFile, buffer, strlen(buffer));
       	current = *(commands + n);
       	n++;
       }
       free(commands);
     }
-    else
+    else{
       runCmd(buffer);
+      int len = strlen(buffer);
+      buffer[len] = '\n';
+      buffer[len+1] = 0;
+      write(commandsFile, buffer, strlen(buffer));
+    }
+    //commandsFile = freopen("commands","r",commandsFile);
+    //char reading [100];
+    //fread(reading, sizeof(char), 100, commandsFile);
+    //printf("%s",reading);
   }
+  close(commandsFile);
+
   printf("\n");
   return 0;
 }
@@ -128,7 +151,7 @@ char * processCharacters(){
   int currentY = initialY;
 
 
-  char * buffer = malloc(100*sizeof(char));
+  char * buffer = calloc(100,sizeof(char));
   int i = 0,sequenceNum =0;
   while(1){
     printf("\033[0;0H Current X: %d, Current Y %d    ", currentX,currentY);
@@ -143,24 +166,21 @@ char * processCharacters(){
       break;
     }
     if (ch == 0x7f) {
-      if(currentX == initialX && currentY == initialY){
-        printf("\a");
+      int val = moveCursorLeft(&currentX,&currentY,initialX,initialY,totalCol);
+      if(val){
+        if(val == 1){
+          buffer[i] = ' ';
+          i--;
+          printf("\033[%d;%dH ", currentX,currentY+1);
+        }
         continue;
       }
-      currentY--;
-      if(currentY == 0){
-        currentX--;
-        currentY = totalCol;
-        printf("\033[%d;%dH ", currentX,currentY+1);
-        continue;
-        //printf("\33[2K");
-        //printf("\r");
-      }
+      buffer[i] = ' ';
+      i--;
       printf("\b");
       printf(" ");
       printf("\b");
       fflush(stdout);
-      //printf("x1: %d, y1: %d, x2: %d, y2: %d\n",x1,y1,x2,y2);
 
     }
     else if(ch==27)
@@ -172,6 +192,14 @@ char * processCharacters(){
           printf("\nUP KEY\n");
         if(ch == 66)
           printf("\nDOWN KEY\n");
+        if(ch == 67){
+          moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
+          i++;
+        }
+        if(ch == 68){
+          moveCursorLeft(&currentX,&currentY,initialX,initialY,totalCol);
+          i--;
+        }
         sequenceNum = 0;
     }
     else {
@@ -180,19 +208,8 @@ char * processCharacters(){
         printf("%c",ch);
       else
         printf("%d",ch);
+      moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
 
-      currentY+=1;
-      if(currentY == totalCol + 1){
-        //printf("EWTD");
-        printf("\n");
-        if(currentX <totalRow){
-          currentX++;
-        }
-        else{
-          initialX--;
-        }
-        currentY = 1;
-      }
       sequenceNum = 0;
       buffer[i] = ch;
       i++;
@@ -224,4 +241,31 @@ void getCursorXY(int * x, int * y){
   scanf("\033[%d;%dR",x,y);
   printf("\033[%d;%dH", (*x), (*y));
   fflush(stdout);
+}
+void moveCursorRight(int * currentX, int * currentY, int totalRow, int totalCol, int  * initialX){
+  *currentY= *currentY+1;
+  if(*currentY == totalCol + 1){
+    //printf("EWTD");
+    printf("\n");
+    if(*currentX <totalRow){
+      *currentX = *currentX+1;
+    }
+    else{
+      *initialX = *initialX-1;
+    }
+    *currentY = 1;
+  }
+}
+int moveCursorLeft(int * currentX, int * currentY, int initialX, int initialY,int totalCol){
+  if(*currentX == initialX && *currentY == initialY){
+    printf("\a");
+    return 2;
+  }
+  *currentY= *currentY-1;
+  if(*currentY == 0){
+    *currentX = *currentX-1;
+    *currentY = totalCol;
+    return 1;
+  }
+  return 0;
 }
