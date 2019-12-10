@@ -289,7 +289,7 @@ void deleteIndex(char ** buffer, int * index){
   }
 }
 int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalCol, int len){
-  int * point = malloc(2);
+  int * point = malloc(2*sizeof(int);
   point[0] = (initialY+len)/totalCol + initialX;
   point[1] = (initialY+len)%totalCol;
   if(point[1]==0){
