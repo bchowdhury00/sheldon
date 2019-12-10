@@ -192,7 +192,7 @@ char * processCharacters(){
         sequenceNum++;
     else if(sequenceNum==2){
         if(ch == 65)
-          printf("\nUP KEY\n");
+          printf("\n");
         if(ch == 66)
           printf("\nDOWN KEY\n");
         if(ch == 67){
