@@ -284,12 +284,12 @@ void deleteIndex(char ** buffer, int * index){
   if(*index == strlen(*buffer)-1){
     //printf("%s","HI");
     (*buffer)[*index] = 0;
-    *index = *index - 1;
   }
   else{
     (*buffer)[*index] = 0;
     strcat(*buffer,*buffer+*index+1);
   }
+  *index = *index - 1;
 }
 void addIndex(char ** buffer, int * index, char value){
   *index = *index+1;
@@ -308,12 +308,16 @@ void addIndex(char ** buffer, int * index, char value){
     newString[1] = storage;
     newString[2] = 0;
 
-    snprintf(*buffer+*index, sizeof(*buffer)-index, "%s%s%s",newString, *buffer+*index+1);
-    printf("X%sX",*buffer);
-    printf("Y%sY",newString);
-    printf("Z%sZ",*buffer+*index+1);
-    //free(newString);
-    //free(appendString);
+    char *secondString = malloc(strlen(*buffer+*index+1)+1);
+    strcpy(secondString,*buffer+*index+1);
+    strcat(*buffer,newString);
+    strcat(*buffer,secondString);
+    //printf("\n");
+    //printf("X%sX",*buffer);
+    //printf("Y%sY",newString);
+    //printf("Z%sZ",secondString);
+    free(newString);
+    free(secondString);
     //printf("buffer: %s", *buffer);
   }
 }
