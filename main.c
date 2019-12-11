@@ -20,8 +20,14 @@ char * processCharacters();
 void revertTermios(struct termios termy);
 void changeTermios(struct termios * termy);
 void getCursorXY(int * x, int * y);
-void moveCursorRight(int * currentX, int * currentY, int totalRow, int totalCol, int  * initialX);
+void moveCursorRight(int * currentX, int * currentY, int totalRow, int totalCol, int  * initial);
 int moveCursorLeft(int * currentX, int * currentY, int initialX, int initialY,int totalCol);
+void deleteIndex(char ** buffer, int * index);
+int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalCol, int len);
+int redirect(char * buffer);
+int existsRedirection(char * buffer);
+
+//Make Strlen an integer
 
 int main(){
   char login_name [100];
@@ -35,19 +41,22 @@ int main(){
   while (fgets(commandList[i], sizeof(commandList[i]), commandsStream))
     i++;
   fclose(commandsStream);
-
   int commandsFile = open("commands",O_RDWR | O_CREAT | O_APPEND,0755);
   while(1){
     char currentDir [100];
     getcwd(currentDir, 100);
     printf("%s@%s:%s$ ",login_name, host_name, currentDir);
-
     char * buffer = processCharacters();
     if (checkMultipleCmds(buffer)){
       int n = 1;
       char ** commands = multipleCmds(buffer);
       char * current = *commands;
       while (current != NULL){
+	/*if (existsRedirection(current)){
+	  redirect(current);
+	  continue;
+	}
+	*/
       	runCmd(current);
         write(commandsFile, buffer, strlen(buffer));
       	current = *(commands + n);
@@ -56,6 +65,10 @@ int main(){
       free(commands);
     }
     else{
+      /* if (existsRedirection(buffer))
+	redirect(buffer);
+      else
+      */
       runCmd(buffer);
       int len = strlen(buffer);
       buffer[len] = '\n';
@@ -68,7 +81,6 @@ int main(){
     //printf("%s",reading);
   }
   close(commandsFile);
-
   printf("\n");
   return 0;
 }
@@ -144,9 +156,95 @@ int existsRedirection(char * buffer){
   return 0;
 }
 
-char * redirect(char * buffer){
-  if (strstr(buffer,">>"){
-      
+int redirect(char * buffer){
+  FILE * output;
+  if (strstr(buffer,"2>>")){
+    char * file = buffer;
+    file = strsep(&file,"2");
+    file = strsep(&file,">");
+    file = strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"a");
+    int  old = dup(STDERR_FILENO);
+    dup2(STDERR_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDERR_FILENO,old);
+    return 0;
+  }
+  else if (strstr(buffer,"2>")){
+    char * file = buffer;
+    file = strsep(&file,"2");
+    file = strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"w");
+    int  old = dup(STDERR_FILENO);
+    dup2(STDERR_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDERR_FILENO,old);
+    return 0;
+  }
+  else if (strstr(buffer,">>")){
+    char * file = buffer;
+    file = strsep(&file,">");
+    file = strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"a");
+    int  old = dup(STDOUT_FILENO);
+    dup2(STDOUT_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDOUT_FILENO,old);
+    return 0;
+  }
+  else if (strstr(buffer,">")){
+    char * file = buffer;
+    strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"w");
+    int  old = dup(STDOUT_FILENO);
+    dup2(STDOUT_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDOUT_FILENO,old);
+    return 0;
+  }
+
+  /*
+    if (strstr(buffer,"<<")){
+    char * redirect = buffer;
+    char * file;
+    file = strsep(&redirect,'<');
+    file = strsep(&redirect,'<');
+    while (*file == ' '){
+    file++;
+    }
+    int output = fopen(file,'a');
+    int  old = dup(STDIN_FILENO);
+    dup2(STDIN_FILENO,output);
+    runCmd(buffer);
+    dup2(STDIN_FILENO,old);
+    }
+  */
+  else if (strstr(buffer,"<")){
+    char * file  = buffer;
+    file = strsep(&file,"<");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"r");
+    int  old = dup(STDIN_FILENO);
+    dup2(STDIN_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDIN_FILENO,old);
+    return 0;
+  }
+  return 0;
 }
 
 char * processCharacters(){
@@ -165,36 +263,35 @@ char * processCharacters(){
   int currentY = initialY;
 
 
-  char * buffer = calloc(100,sizeof(char));
-  int i = 0,sequenceNum =0;
+  char * buffer = calloc(200,sizeof(char));
+  int i = -1,sequenceNum =0;
   while(1){
-    printf("\033[0;0H Current X: %d, Current Y %d    ", currentX,currentY);
+    int len = strlen(buffer);
+    printf("\033[0;0H Current X: %ld, Current Y %d", strlen(buffer), i);
+    printf("\033[%d;%dH", initialX,initialY);
+    printf("%s",buffer);
     printf("\033[%d;%dH", currentX,currentY);
     char ch;
     ch = getchar();
     if(ch == 10){
       printf("%c",ch);
-      //currentX+=1;
-      //currentY=initialY;
       break;
     }
     if (ch == 0x7f) {
       int val = moveCursorLeft(&currentX,&currentY,initialX,initialY,totalCol);
       if(val){
         if(val == 1){
-          buffer[i] = ' ';
-          i--;
-          printf("\033[%d;%dH ", currentX,currentY+1);
+          deleteIndex(&buffer,&i);
+          int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+          printf("\033[%d;%dH ", point[0],point[1]);
+          printf("  CurrentX: %d, current y: %d", point[0],point[1]);
         }
         continue;
       }
-      buffer[i] = ' ';
-      i--;
-      printf("\b");
-      printf(" ");
-      printf("\b");
-      fflush(stdout);
 
+      deleteIndex(&buffer,&i);
+      int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+      printf("\033[%d;%dH ", point[0],point[1]);
     }
     else if(ch==27)
         sequenceNum++;
@@ -206,26 +303,31 @@ char * processCharacters(){
         if(ch == 66)
           printf("\nDOWN KEY\n");
         if(ch == 67){
-          moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
-          i++;
+          if((size_t)i<(long)(strlen(buffer))){
+            moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
+            i++;
+          }
         }
         if(ch == 68){
-          moveCursorLeft(&currentX,&currentY,initialX,initialY,totalCol);
-          i--;
+          if(moveCursorLeft(&currentX,&currentY,initialX,initialY,totalCol)!=2){
+            i--;
+          }
         }
         sequenceNum = 0;
     }
     else {
 
-      if(! iscntrl(ch))
-        printf("%c",ch);
-      else
-        printf("%d",ch);
+      if(! iscntrl(ch)){
+        //printf("%c",ch);
+      }
+      else{
+        //printf("%d",ch);
+      }
       moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
 
       sequenceNum = 0;
-      buffer[i] = ch;
       i++;
+      buffer[i] = ch;
     }
   }
   revertTermios(goodTermy);
@@ -281,4 +383,25 @@ int moveCursorLeft(int * currentX, int * currentY, int initialX, int initialY,in
     return 1;
   }
   return 0;
+}
+void deleteIndex(char ** buffer, int * index){
+  if(*index == strlen(*buffer)-1){
+    //printf("%s","HI");
+    (*buffer)[*index] = 0;
+    *index = *index - 1;
+  }
+  else{
+    (*buffer)[*index] = 0;
+    strcat(*buffer,*buffer+*index+1);
+  }
+}
+int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalCol, int len){
+  int * point = malloc(2*sizeof(int));
+  point[0] = (initialY+len)/totalCol + initialX;
+  point[1] = (initialY+len)%totalCol;
+  if(point[1]==0){
+    point[0]--;
+    point[1]+=totalCol;
+  }
+  return point;
 }
