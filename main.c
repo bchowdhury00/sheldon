@@ -24,6 +24,7 @@ void moveCursorRight(int * currentX, int * currentY, int totalRow, int totalCol,
 int moveCursorLeft(int * currentX, int * currentY, int initialX, int initialY,int totalCol);
 void deleteIndex(char ** buffer, int * index);
 int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalCol, int len);
+void addIndex(char ** buffer, int * index, char value);
 
 //Make Strlen an integer
 
@@ -61,9 +62,6 @@ int main(){
     }
     else{
       runCmd(buffer);
-      int len = strlen(buffer);
-      buffer[len] = '\n';
-      buffer[len+1] = 0;
       write(commandsFile, buffer, strlen(buffer));
     }
     //commandsFile = freopen("commands","r",commandsFile);
@@ -79,6 +77,7 @@ int main(){
 
 int runCmd(char * buffer){
    char ** args = parse_args(buffer);
+    ///printf("\n%c",args[0][4]);
     if(! strcmp(args[0], "cd")){
       change_dir(args[1]);
       return 0;
@@ -167,7 +166,8 @@ char * processCharacters(){
     char ch;
     ch = getchar();
     if(ch == 10){
-      printf("%c",ch);
+      moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
+      printf("\n");
       break;
     }
     if (ch == 0x7f) {
@@ -192,19 +192,22 @@ char * processCharacters(){
         sequenceNum++;
     else if(sequenceNum==2){
         if(ch == 65)
-          printf("\n");
+          //printf("\n");
         if(ch == 66)
           printf("\nDOWN KEY\n");
         if(ch == 67){
-          if((size_t)i<(long)(strlen(buffer))){
+          int len = strlen(buffer);
+          if(i<len-1){
             moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
             i++;
           }
+
         }
         if(ch == 68){
           if(moveCursorLeft(&currentX,&currentY,initialX,initialY,totalCol)!=2){
             i--;
           }
+
         }
         sequenceNum = 0;
     }
@@ -219,11 +222,11 @@ char * processCharacters(){
       moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
 
       sequenceNum = 0;
-      i++;
-      buffer[i] = ch;
+      addIndex(&buffer,&i,ch);
     }
   }
   revertTermios(goodTermy);
+  i++;
   buffer[i] = 0;
   return buffer;
 }
@@ -288,8 +291,34 @@ void deleteIndex(char ** buffer, int * index){
     strcat(*buffer,*buffer+*index+1);
   }
 }
+void addIndex(char ** buffer, int * index, char value){
+  *index = *index+1;
+  if(strlen(*buffer)==0){
+    (*buffer)[*index] = value;
+  }
+  else if(*index == strlen(*buffer)){
+    //printf("%s","HI");
+    (*buffer)[*index] = value;
+  }
+  else{
+    char storage = (*buffer)[*index];
+    (*buffer)[*index] = 0;
+    char * newString = malloc(3*sizeof(char));
+    newString[0] = value;
+    newString[1] = storage;
+    newString[2] = 0;
+
+    snprintf(*buffer+*index, sizeof(*buffer)-index, "%s%s%s",newString, *buffer+*index+1);
+    printf("X%sX",*buffer);
+    printf("Y%sY",newString);
+    printf("Z%sZ",*buffer+*index+1);
+    //free(newString);
+    //free(appendString);
+    //printf("buffer: %s", *buffer);
+  }
+}
 int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalCol, int len){
-  int * point = malloc(2*sizeof(int);
+  int * point = malloc(2*sizeof(int));
   point[0] = (initialY+len)/totalCol + initialX;
   point[1] = (initialY+len)%totalCol;
   if(point[1]==0){
