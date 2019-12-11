@@ -34,7 +34,7 @@ int main(){
   char host_name[100];
   gethostname(host_name,100);
 
-  FILE *commandsStream = fopen("commands","r");
+  FILE *commandsStream = fopen("commands","wb");
   char ** commandList = malloc(100*sizeof(char *));
   int j;
   for(j=0;j<100;j++){
@@ -84,6 +84,8 @@ int main(){
         limit = 2*limit+1;
       }
       runCmd(buffer);
+      buffer[strlen(buffer)-1] ='\n';
+      buffer[strlen(buffer)-1] = 0;
       write(commandsFile, buffer, strlen(buffer));
     }
     //commandsFile = freopen("commands","r",commandsFile);
@@ -221,9 +223,10 @@ char * processCharacters(char ** commandList){
           i=-1;
           printf("\033[%d;%dH", initialX,initialY);
           for(k=0;k<lenCommand;k++){
-            moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
             addIndex(&buffer,&i,ch);
           }
+          int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+          printf("\033[%d;%dH ", point[0],point[1]);
         }
           commandListIndex++;
         if(ch == 66)
