@@ -223,10 +223,11 @@ char * processCharacters(char ** commandList){
           i=-1;
           printf("\033[%d;%dH", initialX,initialY);
           for(k=0;k<lenCommand;k++){
-            addIndex(&buffer,&i,ch);
+            addIndex(&buffer,&i,commandList[commandListIndex][k]);
+            moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
           }
-          int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
-          printf("\033[%d;%dH ", point[0],point[1]);
+          //int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+          //currenX = point[0];
         }
           commandListIndex++;
         if(ch == 66)
