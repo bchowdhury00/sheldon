@@ -136,6 +136,19 @@ void change_dir(char * newdir){
   getcwd(currentDir, 100);
 }
 
+int existsRedirection(char * buffer){
+  if (strchr(buffer,'<'))
+    return 1;
+  if (strchr(buffer,'>'))
+    return 1;
+  return 0;
+}
+
+char * redirect(char * buffer){
+  if (strstr(buffer,">>"){
+      
+}
+
 char * processCharacters(){
   struct winsize w;
   ioctl(0, TIOCGWINSZ, &w);
