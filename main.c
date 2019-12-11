@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+
 void change_dir(char * newdir);
 char ** parse_args( char * line);
 int runCmd(char * buffer);
@@ -26,6 +27,8 @@ void deleteIndex(char ** buffer, int * index);
 int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalCol, int len);
 void addIndex(char ** buffer, int * index, char value);
 void insertBeginning(char *** multiArray, char * command, int lastIndex);
+int redirect(char * buffer);
+int existsRedirection(char * buffer);
 //Make Strlen an integer
 
 int main(){
@@ -120,6 +123,105 @@ int runCmd(char * buffer){
     }
     free(args);
     return 0;
+}
+
+int existsRedirection(char * buffer){
+  if (strchr(buffer,'<'))
+    return 1;
+  if (strchr(buffer,'>'))
+    return 1;
+  return 0;
+}
+
+int redirect(char * buffer){
+  FILE * output;
+  if (strstr(buffer,"2>>")){
+    char * file = buffer;
+    file = strsep(&file,"2");
+    file = strsep(&file,">");
+    file = strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"a");
+    int  old = dup(STDERR_FILENO);
+    dup2(STDERR_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDERR_FILENO,old);
+    return 0;
+  }
+  else if (strstr(buffer,"2>")){
+    char * file = buffer;
+    file = strsep(&file,"2");
+    file = strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"w");
+    int  old = dup(STDERR_FILENO);
+    dup2(STDERR_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDERR_FILENO,old);
+    return 0;
+  }
+  else if (strstr(buffer,">>")){
+    char * file = buffer;
+    file = strsep(&file,">");
+    file = strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"a");
+    int  old = dup(STDOUT_FILENO);
+    dup2(STDOUT_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDOUT_FILENO,old);
+    return 0;
+  }
+  else if (strstr(buffer,">")){
+    char * file = buffer;
+    strsep(&file,">");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"w");
+    int  old = dup(STDOUT_FILENO);
+    dup2(STDOUT_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDOUT_FILENO,old);
+    return 0;
+  }
+
+  /*
+    if (strstr(buffer,"<<")){
+    char * redirect = buffer;
+    char * file;
+    file = strsep(&redirect,'<');
+    file = strsep(&redirect,'<');
+    while (*file == ' '){
+    file++;
+    }
+    int output = fopen(file,'a');
+    int  old = dup(STDIN_FILENO);
+    dup2(STDIN_FILENO,output);
+    runCmd(buffer);
+    dup2(STDIN_FILENO,old);
+    }
+  */
+  else if (strstr(buffer,"<")){
+    char * file  = buffer;
+    file = strsep(&file,"<");
+    while (*file == ' '){
+      file++;
+    }
+    output = fopen(file,"r");
+    int  old = dup(STDIN_FILENO);
+    dup2(STDIN_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDIN_FILENO,old);
+    return 0;
+  }
+  return 0;
 }
 char ** parse_args(char * line){
   char * token;
