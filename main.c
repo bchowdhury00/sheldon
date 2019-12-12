@@ -29,7 +29,8 @@ void addIndex(char ** buffer, int * index, char value);
 void insertBeginning(char *** multiArray, char * command, int lastIndex);
 int redirect(char * buffer);
 int existsRedirection(char * buffer);
-//Make Strlen an integer
+char * stripwhitespace(char * arr);
+int doubleRedirect(char * buffer, char * extra);
 
 int main(){
   char login_name [100];
@@ -100,9 +101,14 @@ int main(){
         }
         limit = 2*limit+1;
       }
+      if (existsRedirection(buffer))
+	       redirect(buffer);
+      else
+	       runCmd(buffer);
       int len = strlen(buffer);
       buffer[len] ='\n';
       buffer[len+1] = 0;
+
       write(commandsFile, buffer, strlen(buffer));
       buffer[len] = 0;
       runCmd(buffer);
@@ -150,92 +156,182 @@ int redirect(char * buffer){
   FILE * output;
   if (strstr(buffer,"2>>")){
     char * file = buffer;
-    file = strsep(&file,"2");
-    file = strsep(&file,">");
-    file = strsep(&file,">");
-    while (*file == ' '){
-      file++;
-    }
+    strsep(&file,"2");
+    strsep(&file,">");
+    strsep(&file,">");
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
     output = fopen(file,"a");
     int  old = dup(STDERR_FILENO);
+    int f = fileno(output);
     dup2(STDERR_FILENO,fileno(output));
     runCmd(buffer);
     dup2(STDERR_FILENO,old);
+    close(old);
+    fclose(output);
     return 0;
   }
   else if (strstr(buffer,"2>")){
     char * file = buffer;
-    file = strsep(&file,"2");
-    file = strsep(&file,">");
-    while (*file == ' '){
-      file++;
-    }
+    strsep(&file,"2");
+    strsep(&file,">");
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
     output = fopen(file,"w");
     int  old = dup(STDERR_FILENO);
-    dup2(STDERR_FILENO,fileno(output));
+    int f = fileno(output);
+    dup2(f,STDERR_FILENO);
     runCmd(buffer);
-    dup2(STDERR_FILENO,old);
+    dup2(old,STDERR_FILENO);
+    close(old);
+    fclose(output);
     return 0;
   }
   else if (strstr(buffer,">>")){
     char * file = buffer;
-    file = strsep(&file,">");
-    file = strsep(&file,">");
-    while (*file == ' '){
-      file++;
-    }
+    strsep(&file,">");
+    strsep(&file,">");
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
     output = fopen(file,"a");
+    int f = fileno(output);
     int  old = dup(STDOUT_FILENO);
-    dup2(STDOUT_FILENO,fileno(output));
+    dup2(f,STDOUT_FILENO);
     runCmd(buffer);
-    dup2(STDOUT_FILENO,old);
+    dup2(old,STDOUT_FILENO);
+    close(old);
+    fclose(output);
     return 0;
   }
   else if (strstr(buffer,">")){
     char * file = buffer;
     strsep(&file,">");
-    while (*file == ' '){
-      file++;
-    }
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
     output = fopen(file,"w");
+    int f = fileno(output);
     int  old = dup(STDOUT_FILENO);
-    dup2(STDOUT_FILENO,fileno(output));
+    dup2(f,STDOUT_FILENO);
     runCmd(buffer);
-    dup2(STDOUT_FILENO,old);
+    dup2(old,STDOUT_FILENO);
+    close(old);
+    fclose(output);
     return 0;
   }
-
-  /*
-    if (strstr(buffer,"<<")){
-    char * redirect = buffer;
-    char * file;
-    file = strsep(&redirect,'<');
-    file = strsep(&redirect,'<');
-    while (*file == ' '){
-    file++;
-    }
-    int output = fopen(file,'a');
-    int  old = dup(STDIN_FILENO);
-    dup2(STDIN_FILENO,output);
-    runCmd(buffer);
-    dup2(STDIN_FILENO,old);
-    }
-  */
   else if (strstr(buffer,"<")){
-    char * file  = buffer;
-    file = strsep(&file,"<");
-    while (*file == ' '){
-      file++;
-    }
+    char * file  =  buffer;
+    strsep(&file,"<");
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
     output = fopen(file,"r");
+    int f = fileno(output);
     int  old = dup(STDIN_FILENO);
-    dup2(STDIN_FILENO,fileno(output));
+    dup2(f,STDIN_FILENO);
     runCmd(buffer);
-    dup2(STDIN_FILENO,old);
+    dup2(old,STDIN_FILENO);
+    close(old);
+    fclose(output);
     return 0;
   }
   return 0;
 }
+/*
+int doubleRedirect(char * buffer, char * extra){
+  FILE * output;
+  if (strstr(extra,"2>>")){
+    char * file = extra;
+    strsep(&file,"2");
+    strsep(&file,">");
+    strsep(&file,">");
+    file = stripwhitespace(file);
+    output = fopen(file,"a");
+    int  old = dup(STDERR_FILENO);
+    int f = fileno(output);
+    dup2(STDERR_FILENO,fileno(output));
+    runCmd(buffer);
+    dup2(STDERR_FILENO,old);
+    close(old);
+    fclose(output);
+    return 0;
+  }
+  else if (strstr(extra,"2>")){
+    char * file = extra;
+    strsep(&file,"2");
+    strsep(&file,">");
+    file = stripwhitespace(file);
+    output = fopen(file,"w");
+    int  old = dup(STDERR_FILENO);
+    int f = fileno(output);
+    dup2(f,STDERR_FILENO);
+    runCmd(buffer);
+    dup2(old,STDERR_FILENO);
+    close(old);
+    fclose(output);
+    return 0;
+  }
+  else if (strstr(extra,">>")){
+    char * file = extra;
+    strsep(&file,">");
+    strsep(&file,">");
+    file = stripwhitespace(file);
+    output = fopen(file,"a");
+    int f = fileno(output);
+    int  old = dup(STDOUT_FILENO);
+    dup2(f,STDOUT_FILENO);
+    runCmd(buffer);
+    dup2(old,STDOUT_FILENO);
+    close(old);
+    fclose(output);
+    return 0;
+  }
+  else if (strstr(extra,">")){
+    char * file = extra;
+    strsep(&file,">");
+    file = stripwhitespace(file);
+    output = fopen(file,"w");
+    int f = fileno(output);
+    int  old = dup(STDOUT_FILENO);
+    dup2(f,STDOUT_FILENO);
+    runCmd(buffer);
+    dup2(old,STDOUT_FILENO);
+    close(old);
+    fclose(output);
+    return 0;
+  }
+  else if (strstr(extra,"<")){
+    char * file  = extra;
+    strsep(&file,"<");
+    file = stripwhitespace(file);
+    output = fopen(file,"r");
+    int f = fileno(output);
+    int  old = dup(STDIN_FILENO);
+    dup2(f,STDIN_FILENO);
+    runCmd(buffer);
+    dup2(old,STDIN_FILENO);
+    close(old);
+    fclose(output);
+    return 0;
+  }
+  return 0;
+}
+*/
+char * stripwhitespace(char * arr){
+  while (arr[0] == ' '){
+    arr = arr + 1;
+  }
+  int end = strlen(arr);
+  while ((arr)[end - 1] == ' '){
+    (arr)[end - 1] = '\0';
+    end = strlen(arr);
+  }
+  return arr;
+}
+
+char * pipe(char * buffer){
+
+}
+
+
 char ** parse_args(char * line){
   char * token;
   char ** returner = malloc(6*sizeof(char *));
@@ -261,8 +357,7 @@ char ** multipleCmds(char * line){
   int i = 0;
   while(line){
     token = strsep(&line,";");
-    if (*token == ' ')
-      token = token + 1;
+    token = stripwhitespace(token);
     returner[i] = token;
     i++;
   }
