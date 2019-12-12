@@ -312,6 +312,11 @@ char * stripwhitespace(char * arr){
   return arr;
 }
 
+char * pipe(char * buffer){
+  
+}
+
+
 char ** parse_args(char * line){
   char * token;
   char ** returner = malloc(6*sizeof(char *));
