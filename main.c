@@ -101,24 +101,13 @@ int main(){
         }
         limit = 2*limit+1;
       }
-<<<<<<< HEAD
-      if (existsRedirection(buffer)){
-	redirect(buffer);
-	continue;
-      }
-      runCmd(buffer);
-      buffer[strlen(buffer)-1] ='\n';
-      buffer[strlen(buffer)-1] = 0;
-=======
       if (existsRedirection(buffer))
-	       redirect(buffer);
+	redirect(buffer);
       else
-	       runCmd(buffer);
+	runCmd(buffer);
       int len = strlen(buffer);
       buffer[len] ='\n';
       buffer[len+1] = 0;
-
->>>>>>> 94b1117459de6873bbe51fe9788269fda3ffff51
       write(commandsFile, buffer, strlen(buffer));
       buffer[len] = 0;
       runCmd(buffer);
@@ -174,7 +163,7 @@ int redirect(char * buffer){
     output = fopen(file,"a");
     int  old = dup(STDERR_FILENO);
     int f = fileno(output);
-    dup2(STDERR_FILENO,fileno(output));
+    dup2(f,STDERR_FILENO);
     runCmd(buffer);
     dup2(STDERR_FILENO,old);
     close(old);
@@ -337,20 +326,15 @@ char * stripwhitespace(char * arr){
   return arr;
 }
 
-<<<<<<< HEAD
-=======
-char * pipe(char * buffer){
-
-}
->>>>>>> 94b1117459de6873bbe51fe9788269fda3ffff51
-
 
 char ** parse_args(char * line){
   char * token;
   char ** returner = malloc(6*sizeof(char *));
   int i = 0;
+  line = stripwhitespace(line);
   while(line){
     token = strsep(&line," ");
+    token = stripwhitespace(token);
     returner[i] = token;
     i++;
   }
@@ -467,7 +451,7 @@ char * processCharacters(char ** commandList, int commandListLen){
           if(commandListIndex<-1){
             commandListIndex++;
             printf("\a");
-            continue;
+	    continue;
           }
           else{
             while(i>-1){
