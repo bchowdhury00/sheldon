@@ -17,7 +17,7 @@ char ** parse_args( char * line);
 int runCmd(char * buffer);
 int checkMultipleCmds(char * line);
 char ** multipleCmds(char * line);
-char * processCharacters(char ** commandList);
+char * processCharacters(char ** commandList,int commandListLen);
 void revertTermios(struct termios termy);
 void changeTermios(struct termios * termy);
 void getCursorXY(int * x, int * y);
@@ -29,7 +29,8 @@ void addIndex(char ** buffer, int * index, char value);
 void insertBeginning(char *** multiArray, char * command, int lastIndex);
 int redirect(char * buffer);
 int existsRedirection(char * buffer);
-//Make Strlen an integer
+char * stripwhitespace(char * arr);
+int doubleRedirect(char * buffer, char * extra);
 
 int main(){
   char login_name [100];
@@ -37,7 +38,7 @@ int main(){
   char host_name[100];
   gethostname(host_name,100);
 
-  FILE *commandsStream = fopen("commands","wb");
+  FILE *commandsStream = fopen("commands","r");
   char ** commandList = malloc(100*sizeof(char *));
   int j;
   for(j=0;j<100;j++){
@@ -45,25 +46,39 @@ int main(){
   }
   int i = 0;
   int limit = 99;
-  while (fgets(commandList[i], sizeof(commandList[i]), commandsStream)){
-    i++;
-    if(i==limit){
-      commandList = realloc(commandList,sizeof(char *) * 2 * (limit+1));
-      for(j=limit+1;j<2*limit+2;j++){
-        commandList[j] = malloc(100*sizeof(char));
+  //Checking if actual file
+  if(commandsStream){
+    while (fgets(commandList[i], sizeof(commandList[i]), commandsStream)){
+      commandList[i][strlen(commandList[i])-1] = 0;
+      i++;
+      if(i==limit){
+        commandList = realloc(commandList,sizeof(char *) * 2 * (limit+1));
+        for(j=limit+1;j<2*limit+2;j++){
+          commandList[j] = malloc(100*sizeof(char));
+        }
+        limit = 2*limit+1;
       }
-      limit = 2*limit+1;
     }
+    fclose(commandsStream);
+    char ** newCommandList = malloc(100*sizeof(char *));
+    for(j=0;j<limit;j++){
+      newCommandList[j] = malloc(100*sizeof(char));
+    }
+    int k;
+    for(k=0;k<i;k++){
+      newCommandList[k] = commandList[i-k-1];
+    }
+    free(commandList);
+    commandList = newCommandList;
   }
-  fclose(commandsStream);
-
-  int commandsFile = open("commands",O_RDWR | O_CREAT | O_APPEND,0755);
+  //Creating file if not there
+  int commandsFile = open("commands",O_WRONLY | O_CREAT | O_APPEND,0755);
   while(1){
     char currentDir [100];
     getcwd(currentDir, 100);
     printf("%s@%s:%s$ ",login_name, host_name, currentDir);
 
-    char * buffer = processCharacters(commandList);
+    char * buffer = processCharacters(commandList, i);
     if (checkMultipleCmds(buffer)){
       int n = 1;
       char ** commands = multipleCmds(buffer);
@@ -86,6 +101,7 @@ int main(){
         }
         limit = 2*limit+1;
       }
+<<<<<<< HEAD
       if (existsRedirection(buffer)){
 	redirect(buffer);
 	continue;
@@ -93,12 +109,21 @@ int main(){
       runCmd(buffer);
       buffer[strlen(buffer)-1] ='\n';
       buffer[strlen(buffer)-1] = 0;
+=======
+      if (existsRedirection(buffer))
+	       redirect(buffer);
+      else
+	       runCmd(buffer);
+      int len = strlen(buffer);
+      buffer[len] ='\n';
+      buffer[len+1] = 0;
+
+>>>>>>> 94b1117459de6873bbe51fe9788269fda3ffff51
       write(commandsFile, buffer, strlen(buffer));
+      buffer[len] = 0;
+      runCmd(buffer);
     }
-    //commandsFile = freopen("commands","r",commandsFile);
-    //char reading [100];
-    //fread(reading, sizeof(char), 100, commandsFile);
-    //printf("%s",reading);
+
   }
   close(commandsFile);
 
@@ -312,6 +337,12 @@ char * stripwhitespace(char * arr){
   return arr;
 }
 
+<<<<<<< HEAD
+=======
+char * pipe(char * buffer){
+
+}
+>>>>>>> 94b1117459de6873bbe51fe9788269fda3ffff51
 
 
 char ** parse_args(char * line){
@@ -339,8 +370,7 @@ char ** multipleCmds(char * line){
   int i = 0;
   while(line){
     token = strsep(&line,";");
-    if (*token == ' ')
-      token = token + 1;
+    token = stripwhitespace(token);
     returner[i] = token;
     i++;
   }
@@ -356,7 +386,7 @@ void change_dir(char * newdir){
   getcwd(currentDir, 100);
 }
 
-char * processCharacters(char ** commandList){
+char * processCharacters(char ** commandList, int commandListLen){
   struct winsize w;
   ioctl(0, TIOCGWINSZ, &w);
   int totalCol = w.ws_col;
@@ -373,10 +403,10 @@ char * processCharacters(char ** commandList){
 
 
   char * buffer = calloc(200,sizeof(char));
-  int i = -1,sequenceNum =0,commandListIndex=0;
+  int i = -1,sequenceNum =0,commandListIndex=-1;
   while(1){
     int len = strlen(buffer);
-    printf("\033[0;0H Current X: %ld, Current Y %d", strlen(buffer), i);
+    printf("\033[0;0H Current X: %d, Current Y %d", currentX, commandListIndex);
     printf("\033[%d;%dH", initialX,initialY);
     printf("%s",buffer);
     printf("\033[%d;%dH", currentX,currentY);
@@ -409,22 +439,58 @@ char * processCharacters(char ** commandList){
         sequenceNum++;
     else if(sequenceNum==2){
         if(ch == 65){
-          free(buffer);
-          buffer = calloc(200,sizeof(char));
+          sequenceNum = 0;
+          commandListIndex++;
+          if(commandListIndex>=commandListLen){
+            commandListIndex--;
+            printf("\a");
+            continue;
+          }
+          while(i>-1){
+            deleteIndex(&buffer,&i);
+            int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+            printf("\033[%d;%dH ", point[0],point[1]);
+          }
           int lenCommand = strlen(commandList[commandListIndex]);
           int k;
-          i=-1;
           printf("\033[%d;%dH", initialX,initialY);
           for(k=0;k<lenCommand;k++){
             addIndex(&buffer,&i,commandList[commandListIndex][k]);
-            moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
           }
-          //int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
-          //currenX = point[0];
+          int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+          currentX = point[0];
+          currentY = point[1];
         }
-          commandListIndex++;
-        if(ch == 66)
-          printf("\nDOWN KEY\n");
+	      else if(ch == 66){
+          sequenceNum = 0;
+          commandListIndex--;
+          if(commandListIndex<-1){
+            commandListIndex++;
+            printf("\a");
+            continue;
+          }
+          else{
+            while(i>-1){
+              deleteIndex(&buffer,&i);
+              int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+              printf("\033[%d;%dH ", point[0],point[1]);
+            }
+          }
+          if(commandListIndex<0){
+              currentX = initialX;
+              currentY = initialY;
+              continue;
+          }
+          int lenCommand = strlen(commandList[commandListIndex]);
+          int k;
+          printf("\033[%d;%dH", initialX,initialY);
+          for(k=0;k<lenCommand;k++){
+            addIndex(&buffer,&i,commandList[commandListIndex][k]);
+          }
+          int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
+          currentX = point[0];
+          currentY = point[1];
+        }
         if(ch == 67){
           int len = strlen(buffer);
           if(i<len-1){
@@ -562,12 +628,9 @@ int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalC
   return point;
 }
 void insertBeginning(char *** multiArray, char * command, int lastIndex){
-  char ** twoArray = multiArray[0];
+  char ** twoArray = *multiArray;
   int i =0;
   for(i=lastIndex;i>0;i--){
-    if(i==0){
-      int zz =5;
-    }
     strcpy(twoArray[i],twoArray[i-1]);
   }
   strcpy(twoArray[0],command);
