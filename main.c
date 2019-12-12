@@ -326,11 +326,11 @@ char * stripwhitespace(char * arr){
   }
   return arr;
 }
-
+/*
 char * pipe(char * buffer){
 
 }
-
+*/
 
 char ** parse_args(char * line){
   char * token;
@@ -621,4 +621,36 @@ void insertBeginning(char *** multiArray, char * command, int lastIndex){
     strcpy(twoArray[i],twoArray[i-1]);
   }
   strcpy(twoArray[0],command);
+}
+void insertString(char ** buffer, int indexTilde, char * value){
+  /*
+  if(strlen(*buffer)==1){
+    (*buffer)[indexTildeTilde] = 0;
+    strcpy((*buffer)[indexTildeTilde], value);
+  }
+  else if(indexTilde == strlen(*buffer)-1){
+    //printf("%s","HI");
+    (*buffer)[indexTildeTilde] = 0;
+    strcpy((*buffer)[indexTildeTilde], value);
+  }
+  else{
+    char storage = (*buffer)[indexTilde];
+    (*buffer)[indexTilde] = 0;
+    char * newString = malloc(3*sizeof(char));
+    newString[0] = value;
+    newString[1] = storage;
+    newString[2] = 0;
+
+    char *secondString = malloc(strlen(*buffer+indexTilde+1)+1);
+    strcpy(secondString,*buffer+indexTilde+1);
+    strcat(*buffer,newString);
+    strcat(*buffer,secondString);
+    //printf("\n");
+    //printf("X%sX",*buffer);
+    //printf("Y%sY",newString);
+    //printf("Z%sZ",secondString);
+    free(newString);
+    free(secondString);
+    //printf("buffer: %s", *buffer);
+*/
 }
