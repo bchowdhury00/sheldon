@@ -101,17 +101,17 @@ int main(){
         }
         limit = 2*limit+1;
       }
-      if (existsRedirection(buffer))
-	       redirect(buffer);
-      else
-	       runCmd(buffer);
       int len = strlen(buffer);
       buffer[len] ='\n';
       buffer[len+1] = 0;
-
       write(commandsFile, buffer, strlen(buffer));
       buffer[len] = 0;
+      if (existsRedirection(buffer)){
+	       redirect(buffer);
+	        continue;
+      }
       runCmd(buffer);
+
     }
 
   }
@@ -332,6 +332,7 @@ char * pipe(char * buffer){
 }
 */
 
+
 char ** parse_args(char * line){
   char * token;
   char ** returner = malloc(6*sizeof(char *));
@@ -441,8 +442,9 @@ char * processCharacters(char ** commandList, int commandListLen){
           int lenCommand = strlen(commandList[commandListIndex]);
           int k;
           printf("\033[%d;%dH", initialX,initialY);
-          for(k=0;k<lenCommand;k++){
+          for(k=0;k<lenCommand+1;k++){
             addIndex(&buffer,&i,commandList[commandListIndex][k]);
+            moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
           }
           int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
           currentX = point[0];
@@ -623,34 +625,42 @@ void insertBeginning(char *** multiArray, char * command, int lastIndex){
   strcpy(twoArray[0],command);
 }
 void insertString(char ** buffer, int indexTilde, char * value){
-  /*
+
   if(strlen(*buffer)==1){
-    (*buffer)[indexTildeTilde] = 0;
-    strcpy((*buffer)[indexTildeTilde], value);
+    (*buffer)[0] = 0;
+    strcpy(*buffer, value);
   }
   else if(indexTilde == strlen(*buffer)-1){
-    //printf("%s","HI");
-    (*buffer)[indexTildeTilde] = 0;
-    strcpy((*buffer)[indexTildeTilde], value);
+    (*buffer)[indexTilde] = 0;
+    strcat(*buffer, value);
+  }
+  else if(indexTilde == 0){
+
+    int len = sizeof(buffer) + sizeof(value);
+    char temp [len+1];
+    strcpy(temp,value);
+    strcat(temp,*buffer+1);
+    free(*buffer);
+    *buffer = temp;
   }
   else{
-    char storage = (*buffer)[indexTilde];
-    (*buffer)[indexTilde] = 0;
-    char * newString = malloc(3*sizeof(char));
-    newString[0] = value;
-    newString[1] = storage;
-    newString[2] = 0;
+    int len = sizeof(buffer) + sizeof(value);
+    char temp [len+1];
 
-    char *secondString = malloc(strlen(*buffer+indexTilde+1)+1);
-    strcpy(secondString,*buffer+indexTilde+1);
-    strcat(*buffer,newString);
-    strcat(*buffer,secondString);
-    //printf("\n");
-    //printf("X%sX",*buffer);
-    //printf("Y%sY",newString);
-    //printf("Z%sZ",secondString);
-    free(newString);
-    free(secondString);
-    //printf("buffer: %s", *buffer);
-*/
+    (*buffer)[indexTilde] = 0;
+    strcpy(temp,*buffer);
+    strcat(temp,value);
+    strcat(temp,*buffer+indexTilde+1);
+    free(*buffer);
+    *buffer = temp;
+  }
+}
+void replaceExtraStringWithTilde(char ** bufer, char * valueToSearch){
+  char temp = 
+  char *ptr = strstr(*buffer, valueToSearch);
+  if(ptr!= 0){
+    *ptr = 0;
+    *(ptr+strlen(valueToSearch)-1) = 0;
+
+  }
 }
