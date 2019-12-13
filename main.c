@@ -79,6 +79,9 @@ int main(){
     printf("%s@%s:%s$ ",login_name, host_name, currentDir);
 
     char * buffer = processCharacters(commandList, i);
+
+    buffer = stripwhitespace(buffer);
+    // caleb- ADD INSERT TO CHECK
     if (checkMultipleCmds(buffer)){
       int n = 1;
       char ** commands = multipleCmds(buffer);
@@ -240,83 +243,15 @@ int redirect(char * buffer){
   return 0;
 }
 /*
-int doubleRedirect(char * buffer, char * extra){
-  FILE * output;
-  if (strstr(extra,"2>>")){
-    char * file = extra;
-    strsep(&file,"2");
-    strsep(&file,">");
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    output = fopen(file,"a");
-    int  old = dup(STDERR_FILENO);
-    int f = fileno(output);
-    dup2(STDERR_FILENO,fileno(output));
-    runCmd(buffer);
-    dup2(STDERR_FILENO,old);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(extra,"2>")){
-    char * file = extra;
-    strsep(&file,"2");
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    output = fopen(file,"w");
-    int  old = dup(STDERR_FILENO);
-    int f = fileno(output);
-    dup2(f,STDERR_FILENO);
-    runCmd(buffer);
-    dup2(old,STDERR_FILENO);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(extra,">>")){
-    char * file = extra;
-    strsep(&file,">");
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    output = fopen(file,"a");
-    int f = fileno(output);
-    int  old = dup(STDOUT_FILENO);
-    dup2(f,STDOUT_FILENO);
-    runCmd(buffer);
-    dup2(old,STDOUT_FILENO);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(extra,">")){
-    char * file = extra;
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    output = fopen(file,"w");
-    int f = fileno(output);
-    int  old = dup(STDOUT_FILENO);
-    dup2(f,STDOUT_FILENO);
-    runCmd(buffer);
-    dup2(old,STDOUT_FILENO);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(extra,"<")){
-    char * file  = extra;
-    strsep(&file,"<");
-    file = stripwhitespace(file);
-    output = fopen(file,"r");
-    int f = fileno(output);
-    int  old = dup(STDIN_FILENO);
-    dup2(f,STDIN_FILENO);
-    runCmd(buffer);
-    dup2(old,STDIN_FILENO);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  return 0;
+int doubleRedirect(char * moreRedirect,int * isTrue,int * newfd, int  * oldfd){
+  if (strstr(moreRedirect,"2>>")){
+    strsep(&moreRedirect,"2");
+    strsep(&moreRedirect,">");
+    strsep(&moreRedirect,">");
+    
+    
+      
+  
 }
 */
 char * stripwhitespace(char * arr){
@@ -662,6 +597,7 @@ void insertString(char ** buffer, int indexTilde, char * value){
     *buffer = temp;
   }
 }
+/*
 void replaceExtraStringWithTilde(char ** bufer, char * valueToSearch){
   char temp = 
   char *ptr = strstr(*buffer, valueToSearch);
@@ -671,3 +607,4 @@ void replaceExtraStringWithTilde(char ** bufer, char * valueToSearch){
 
   }
 }
+*/
