@@ -110,7 +110,12 @@ int main(){
       buffer[len+1] = 0;
       write(commandsFile, buffer, strlen(buffer));
       buffer[len] = 0;
+      if (existsRedirection(buffer)){
+	       redirect(buffer);
+	        continue;
+      }
       runCmd(buffer);
+
     }
 
   }
@@ -326,6 +331,12 @@ char * stripwhitespace(char * arr){
   return arr;
 }
 
+/*
+char * pipe(char * buffer){
+
+}
+*/
+
 
 char ** parse_args(char * line){
   char * token;
@@ -438,8 +449,9 @@ char * processCharacters(char ** commandList, int commandListLen){
           int lenCommand = strlen(commandList[commandListIndex]);
           int k;
           printf("\033[%d;%dH", initialX,initialY);
-          for(k=0;k<lenCommand;k++){
+          for(k=0;k<lenCommand+1;k++){
             addIndex(&buffer,&i,commandList[commandListIndex][k]);
+            moveCursorRight(&currentX,&currentY,totalRow,totalCol,&initialX);
           }
           int * point = returnPointFromMatrix(initialX, initialY, totalRow, totalCol, strlen(buffer));
           currentX = point[0];
@@ -618,4 +630,44 @@ void insertBeginning(char *** multiArray, char * command, int lastIndex){
     strcpy(twoArray[i],twoArray[i-1]);
   }
   strcpy(twoArray[0],command);
+}
+void insertString(char ** buffer, int indexTilde, char * value){
+
+  if(strlen(*buffer)==1){
+    (*buffer)[0] = 0;
+    strcpy(*buffer, value);
+  }
+  else if(indexTilde == strlen(*buffer)-1){
+    (*buffer)[indexTilde] = 0;
+    strcat(*buffer, value);
+  }
+  else if(indexTilde == 0){
+
+    int len = sizeof(buffer) + sizeof(value);
+    char temp [len+1];
+    strcpy(temp,value);
+    strcat(temp,*buffer+1);
+    free(*buffer);
+    *buffer = temp;
+  }
+  else{
+    int len = sizeof(buffer) + sizeof(value);
+    char temp [len+1];
+
+    (*buffer)[indexTilde] = 0;
+    strcpy(temp,*buffer);
+    strcat(temp,value);
+    strcat(temp,*buffer+indexTilde+1);
+    free(*buffer);
+    *buffer = temp;
+  }
+}
+void replaceExtraStringWithTilde(char ** bufer, char * valueToSearch){
+  char temp = 
+  char *ptr = strstr(*buffer, valueToSearch);
+  if(ptr!= 0){
+    *ptr = 0;
+    *(ptr+strlen(valueToSearch)-1) = 0;
+
+  }
 }
