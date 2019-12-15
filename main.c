@@ -389,21 +389,23 @@ int pipeCommands(char * buffer){
   strsep(&hold,"|");
   buffer = stripwhitespace(buffer);
   hold = stripwhitespace(hold);
-  /*
-  FILE * p = popen(buffer,"r");
-  int old = dup(STDIN_FILENO);
-  dup2(fileno(p),STDIN_FILENO);
-  */
-  runCmd(hold);
-  /*
-  dup2(old,STDIN_FILENO);
-  close(fileno(p));
-  close(old);
-  pclose(p);
-  */
+  char ** args = parse_args(hold);
+  int pid = getpid();
+  fork();
+  int childInfo;
+  if(getpid() == pid)
+    wait(&childInfo);
+  else{
+    FILE * p = popen(buffer,"r");
+    int old = dup(STDIN_FILENO);
+    dup2(fileno(p),STDIN_FILENO);
+    execvp(args[0], args);
+    dup2(old,STDIN_FILENO);
+    pclose(p);
+  }
+  free(args);
   return 0;
 }  
-  
 
 char * processCharacters(char ** commandList, int commandListLen){
   struct winsize w;
