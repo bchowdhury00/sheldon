@@ -656,11 +656,13 @@ void insertString(char ** buffer, int indexTilde, char * value){
   }
 }
 void replaceExtraStringWithTilde(char ** bufer, char * valueToSearch){
-  char temp = 
+  /*
+  char temp =
   char *ptr = strstr(*buffer, valueToSearch);
   if(ptr!= 0){
     *ptr = 0;
     *(ptr+strlen(valueToSearch)-1) = 0;
 
   }
+  */
 }
