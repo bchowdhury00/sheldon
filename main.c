@@ -30,7 +30,9 @@ void insertBeginning(char *** multiArray, char * command, int lastIndex);
 int redirect(char * buffer);
 int existsRedirection(char * buffer);
 char * stripwhitespace(char * arr);
-int doubleRedirect(char * buffer, char * extra);
+char * doubleRedirect(char * moreRedirect,int * isTrue,int * newfd, int  * oldfd, int * openFile);
+int isPipe(char * buffer);
+int pipeCommands(char * buffer);
 
 int main(){
   char login_name [100];
@@ -104,21 +106,20 @@ int main(){
         }
         limit = 2*limit+1;
       }
-      if (existsRedirection(buffer))
-	redirect(buffer);
-      else
-	runCmd(buffer);
       int len = strlen(buffer);
       buffer[len] ='\n';
       buffer[len+1] = 0;
       write(commandsFile, buffer, strlen(buffer));
       buffer[len] = 0;
       if (existsRedirection(buffer)){
-	       redirect(buffer);
-	        continue;
+	redirect(buffer);
+	continue;
+      }
+      if (isPipe(buffer)){
+	  pipeCommands(buffer);
+	  continue;
       }
       runCmd(buffer);
-
     }
 
   }
@@ -161,73 +162,17 @@ int existsRedirection(char * buffer){
 
 int redirect(char * buffer){
   FILE * output;
-  if (strstr(buffer,"2>>")){
-    char * file = buffer;
-    strsep(&file,"2");
-    strsep(&file,">");
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    buffer = stripwhitespace(buffer);
-    output = fopen(file,"a");
-    int  old = dup(STDERR_FILENO);
-    int f = fileno(output);
-    dup2(f,STDERR_FILENO);
-    runCmd(buffer);
-    dup2(STDERR_FILENO,old);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(buffer,"2>")){
-    char * file = buffer;
-    strsep(&file,"2");
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    buffer = stripwhitespace(buffer);
-    output = fopen(file,"w");
-    int  old = dup(STDERR_FILENO);
-    int f = fileno(output);
-    dup2(f,STDERR_FILENO);
-    runCmd(buffer);
-    dup2(old,STDERR_FILENO);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(buffer,">>")){
-    char * file = buffer;
-    strsep(&file,">");
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    buffer = stripwhitespace(buffer);
-    output = fopen(file,"a");
-    int f = fileno(output);
-    int  old = dup(STDOUT_FILENO);
-    dup2(f,STDOUT_FILENO);
-    runCmd(buffer);
-    dup2(old,STDOUT_FILENO);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(buffer,">")){
-    char * file = buffer;
-    strsep(&file,">");
-    file = stripwhitespace(file);
-    buffer = stripwhitespace(buffer);
-    output = fopen(file,"w");
-    int f = fileno(output);
-    int  old = dup(STDOUT_FILENO);
-    dup2(f,STDOUT_FILENO);
-    runCmd(buffer);
-    dup2(old,STDOUT_FILENO);
-    close(old);
-    fclose(output);
-    return 0;
-  }
-  else if (strstr(buffer,"<")){
+  int isTrue = 0;
+  int oldfd = 0;
+  int newfd = 0;
+  int openFile= 0;
+  if (strstr(buffer,"<")){
     char * file  =  buffer;
     strsep(&file,"<");
+    if (existsRedirection(file)){
+      char * other  = file;
+      doubleRedirect(other, &isTrue, &newfd, &oldfd, &openFile);
+    }    
     file = stripwhitespace(file);
     buffer = stripwhitespace(buffer);
     output = fopen(file,"r");
@@ -238,22 +183,145 @@ int redirect(char * buffer){
     dup2(old,STDIN_FILENO);
     close(old);
     fclose(output);
-    return 0;
+  }
+  else if (strstr(buffer,"2>>")){
+    char * file = buffer;
+    strsep(&file,"2");
+    strsep(&file,">");
+    strsep(&file,">");
+    if (existsRedirection(file)){
+      char * other  = file;
+      doubleRedirect(other, &isTrue, &newfd, &oldfd, &openFile);
+    }  
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
+    output = fopen(file,"a");
+    int  old = dup(STDERR_FILENO);
+    int f = fileno(output);
+    dup2(f,STDERR_FILENO);
+    runCmd(buffer);
+    dup2(STDERR_FILENO,old);
+    close(old);
+    fclose(output);
+  }
+  else if (strstr(buffer,"2>")){
+    char * file = buffer;
+    strsep(&file,"2");
+    strsep(&file,">");
+    if (existsRedirection(file)){
+      char * other  = file;
+      doubleRedirect(other, &isTrue, &newfd, &oldfd, &openFile);
+    }  
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
+    output = fopen(file,"w");
+    int  old = dup(STDERR_FILENO);
+    int f = fileno(output);
+    dup2(f,STDERR_FILENO);
+    runCmd(buffer);
+    dup2(old,STDERR_FILENO);
+    close(old);
+    fclose(output);
+  }
+  else if (strstr(buffer,">>")){
+    char * file = buffer;
+    strsep(&file,">");
+    strsep(&file,">");
+    if (existsRedirection(file)){
+      char * other  = file;
+      doubleRedirect(other, &isTrue, &newfd, &oldfd, &openFile);
+    }   
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
+    output = fopen(file,"a");
+    int f = fileno(output);
+    int  old = dup(STDOUT_FILENO);
+    dup2(f,STDOUT_FILENO);
+    runCmd(buffer);
+    dup2(old,STDOUT_FILENO);
+    close(old);
+    fclose(output);
+  }
+  else if (strstr(buffer,">")){
+    char * file = buffer;
+    strsep(&file,">");
+    if (existsRedirection(file)){
+      char * other  = file;
+      doubleRedirect(other, &isTrue, &newfd, &oldfd, &openFile);
+    }   
+    file = stripwhitespace(file);
+    buffer = stripwhitespace(buffer);
+    output = fopen(file,"w");
+    int f = fileno(output);
+    int  old = dup(STDOUT_FILENO);
+    dup2(f,STDOUT_FILENO);
+    runCmd(buffer);
+    dup2(old,STDOUT_FILENO);
+    close(old);
+    fclose(output);
+  }
+  if (isTrue){
+    dup2(oldfd,newfd);
+    close(oldfd);
+    close(openFile);
   }
   return 0;
 }
-/*
-int doubleRedirect(char * moreRedirect,int * isTrue,int * newfd, int  * oldfd){
+
+char * doubleRedirect(char * moreRedirect,int * isTrue,int * newfd, int  * oldfd, int * openFile){
+  *isTrue = 1;
   if (strstr(moreRedirect,"2>>")){
     strsep(&moreRedirect,"2");
     strsep(&moreRedirect,">");
     strsep(&moreRedirect,">");
-    
-    
-      
-  
+    moreRedirect = stripwhitespace(moreRedirect);
+    FILE * file = fopen(moreRedirect,"a");
+    int fileNum = fileno(file);
+    *openFile = fileNum;
+    *oldfd = dup(STDERR_FILENO);
+    *newfd = dup2(fileNum,STDERR_FILENO);
+  }
+  else if (strstr(moreRedirect,"2>")){
+    strsep(&moreRedirect,"2");
+    strsep(&moreRedirect,">");
+    moreRedirect = stripwhitespace(moreRedirect);
+    FILE * file = fopen(moreRedirect,"w");
+    int fileNum = fileno(file);
+    *openFile = fileNum;
+    *oldfd = dup(STDERR_FILENO);
+    *newfd = dup2(fileNum,STDERR_FILENO);
+  }
+  else if (strstr(moreRedirect,">>")){
+    strsep(&moreRedirect,">");
+    strsep(&moreRedirect,">");
+    moreRedirect = stripwhitespace(moreRedirect);
+    FILE * file = fopen(moreRedirect,"a");
+    int fileNum = fileno(file);
+    *openFile = fileNum;
+    *oldfd = dup(STDOUT_FILENO);
+    *newfd = dup2(fileNum,STDOUT_FILENO);
+  }
+  else if (strstr(moreRedirect,">")){
+    strsep(&moreRedirect,">");
+    moreRedirect = stripwhitespace(moreRedirect);
+    FILE * file = fopen(moreRedirect,"w");
+    int fileNum = fileno(file);
+    *openFile = fileNum;
+    *oldfd = dup(STDOUT_FILENO);
+    *newfd = dup2(fileNum,STDOUT_FILENO);
+  }
+  else if (strstr(moreRedirect,"<")){
+    strsep(&moreRedirect,">");
+    moreRedirect = stripwhitespace(moreRedirect);
+    FILE * file = fopen(moreRedirect,"w");
+    int fileNum = fileno(file);
+    *openFile = fileNum;
+    *oldfd = dup(STDIN_FILENO);
+    *newfd = dup2(fileNum,STDIN_FILENO);
+  }
+  return moreRedirect;
 }
-*/
+  
 char * stripwhitespace(char * arr){
   while (arr[0] == ' '){
     arr = arr + 1;
@@ -265,12 +333,6 @@ char * stripwhitespace(char * arr){
   }
   return arr;
 }
-
-/*
-char * pipe(char * buffer){
-
-}
-*/
 
 
 char ** parse_args(char * line){
@@ -315,6 +377,33 @@ void change_dir(char * newdir){
   char currentDir [100];
   getcwd(currentDir, 100);
 }
+
+int isPipe(char * buffer){
+  if (strchr(buffer,'|'))
+    return 1;
+  return 0;
+}
+
+int pipeCommands(char * buffer){
+  char * hold = buffer;
+  strsep(&hold,"|");
+  buffer = stripwhitespace(buffer);
+  hold = stripwhitespace(hold);
+  /*
+  FILE * p = popen(buffer,"r");
+  int old = dup(STDIN_FILENO);
+  dup2(fileno(p),STDIN_FILENO);
+  */
+  runCmd(hold);
+  /*
+  dup2(old,STDIN_FILENO);
+  close(fileno(p));
+  close(old);
+  pclose(p);
+  */
+  return 0;
+}  
+  
 
 char * processCharacters(char ** commandList, int commandListLen){
   struct winsize w;
