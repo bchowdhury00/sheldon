@@ -2,11 +2,17 @@
 by Biraj Chowdhury and Caleb Kahan
 
 Features:
-	Forks and executes commands!
-	Parses multiple commands on one line!
-	Redirects using >, <!
-	Can use 1 pipe 
-	Can go up and down to look at previous commands 
+	-Forks and executes commands!
+	
+	-Parses multiple commands on one line!
+	
+	-Redirects using >, <!
+	
+	-Can use 1 pipe 
+	
+	-Can go up and down to look at previous commands 
+	
+	-Replace ~/ with home directory
   
 Attempted:
   Multiple pipes, could not figure out how to get that working 
