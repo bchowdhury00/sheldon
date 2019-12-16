@@ -2,6 +2,7 @@
 by Biraj Chowdhury and Caleb Kahan
 
 Features:
+
 	-Forks and executes commands!
 	
 	-Parses multiple commands on one line!
@@ -15,8 +16,11 @@ Features:
 	-Replace ~/ with home directory
   
 Attempted:
-  Multiple pipes, could not figure out how to get that working 
-  
+	
+	Multiple pipes, could not figure out how to get that working 
+	
+Bugs:
+
   
 Files and Function Headers:
 main.c 
