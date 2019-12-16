@@ -41,7 +41,7 @@ Bugs: We changed the terminal to non-canonical mode, and handled all keypresses 
 
   
 Files and Function Headers:
-main.c 
+functions.c 
 
 
 
