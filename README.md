@@ -80,15 +80,64 @@ main.c
  	 ==================*/
   
 	/*========== void revertTermios(struct termios termy);
+	  changes back the terminal to cannonical mode. (process characters line at a time)
+	  Inputs:
+	  	struct termios termy(struct of old/good terminal to revert to)
 	/*========== void changeTermios(struct termios * termy);
+	  changes the terminal to non-cannonical mode (processes characters one character at a time)
+	  Inputs:
+	  	struct termios termy(stores old original termios struct for later reversion)
+	  ==================*/
 	/*========== void getCursorXY(int * x, int * y);
-	/*========== void moveCursorRight(int * currentX, int * currentY, int totalRow, int totalCol, int  * initial);
+	  gets the coordinates of the cursor
+	  Inputs:
+	  	int * x (stores the x-coordinate here)
+		int * y (stores the y-coordinate here)
+	  ==================*/
+	/*========== void moveCursorRight(int * currentX, int * currentY, int totalRow, int totalCol, int  * initialX);
+	  moves the cursor one unit to the right, sometimes creates new lines
+	  Inputs:
+	  	int * currentX - takes pointer to currentX coordinate of cursor
+		int * currentY- takes pointer to currentY coordinate of cursor
+		int totalRow - takes total num of rows of screen
+		int totalCol - takes total num of columns of screen
+		int * initialX - takes initial X coordinate of cursor. 
+	  Basically the system is to find the initial coordinate, set the current coordinate to that, and then manually edit the current 	   coordinate.
+	  ==================*/
 	/*========== int moveCursorLeft(int * currentX, int * currentY, int initialX, int initialY,int totalCol);
+	 moves the cursor one unit to the right, sometimes creates new lines
+	 Inputs:
+	  	int * currentX - takes pointer to currentX coordinate of cursor
+		int * currentY- takes pointer to currentY coordinate of cursor
+		int initialX - takes initial X coordinate of cursor. 
+		int initialY- takes initial Y coordinate of cursor. 
+		int totalCol - takes total num of columns of screen
+	  Return value has 3 pos values: 0,1,2. 2 means the cursor can't move left and sends an alert. 1 means it has to traverse a new           line backwards. 0 is just regularly moving backward. 
+	 ==================*/
 	/*========== void deleteIndex(char ** buffer, int * index);
+	  removes element from buffer at index. 
+	  combined with backspace.
+	  Inputs: 
+	  	char ** buffer (command line)
+	  	int * index (where to remove character)
+	  ==================*/	
 	/*========== int * returnPointFromMatrix(int initialX, int initialY, int totalRow, int totalCol, int len);
+	  returns array of length 2 that when an initial coordinate and how many characters have been put down, calculates the final 	           coordinates of the cursor
+	  Inputs:
+	  	int initialX (initial x-cor of cursor)
+		int initialY (initial y-cor of cursor)
+		int totalRow (total rows of screen)
+		int totalCol (total Col of screen)
+		int len(number of characters to move forward)
+	  Output:
+	  	array of length 2 with x-cor and y-cor of final cursor position
+	  ==================*/
 	/*========== void addIndex(char ** buffer, int * index, char value);
+	   inserts character into buffer at index with a value specified. EX: place 'c' at index 5 of buffer.
+	   In
+	   ==================*/
 	/*========== void insertBeginning(char *** multiArray, char * command, int lastIndex);
-
+	  ==================*/
 	/*========== int redirect(char * buffer);
 	  Implements redirection using dup and dup2 and then runs command.
 	  Inputs:
