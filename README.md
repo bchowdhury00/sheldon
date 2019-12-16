@@ -5,13 +5,12 @@ Features:
 	Forks and executes commands!
 	Parses multiple commands on one line!
 	Redirects using >, <!
-  Can use 1 pipe 
-  Can go up and down to look at previous commands 
+	Can use 1 pipe 
+	Can go up and down to look at previous commands 
   
 Attempted:
   Multiple pipes, could not figure out how to get that working 
   
-Bugs:
   
 Files and Function Headers
 main.c :
