@@ -134,9 +134,17 @@ main.c
 	  ==================*/
 	/*========== void addIndex(char ** buffer, int * index, char value);
 	   inserts character into buffer at index with a value specified. EX: place 'c' at index 5 of buffer.
-	   In
+	   Inputs:
+	   	char ** buffer(command line)
+		int * index (where to insert new character)
+		char value (what value is the new character)
 	   ==================*/
 	/*========== void insertBeginning(char *** multiArray, char * command, int lastIndex);
+	  Prepends command (a string) to beginning of array of strings
+	  Inputs:
+	  	char *** multiArray (pointer to array of strings or commands in this case)
+		char * command (string of command to append)
+		int lastIndex (last Index filled up in multiArray)
 	  ==================*/
 	/*========== int redirect(char * buffer);
 	  Implements redirection using dup and dup2 and then runs command.
