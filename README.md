@@ -5,21 +5,39 @@ Features:
 
 	-Forks and executes commands!
 	
-	-Parses multiple commands on one line!
+	-Parses multiple commands on one line! (some features such as history are not implemented on it though)
 	
 	-Redirects using >, <!
 	
 	-Can use 1 pipe 
 	
-	-Can go up and down to look at previous commands 
+	-Can go up and down to look at previous commands- history preserves across sessions with a file called commands 
+	
+	-Moving cursor left and right with arraow keys
+	
+	-alerts- when trying to move your cursor where uou are not allowed to do so (turn sound on)
+	
+	-Implemented backspace, and isnertion of characters in non-canonical mode. 
 	
 	-Replace ~/ with home directory
+	
+	-you can typle in ~ and the shell will recognize what it means
+	
+	-white space doesn't matter
+	
+	-exit and cd are implemented- can move over directories
+	
+	-prompt is exactly the same as prompt in regular shell
+	
+	-
   
 Attempted:
 	
 	Multiple pipes, could not figure out how to get that working 
 	
-Bugs:
+	Tabs- autocomplete- not enough time
+	
+Bugs: We changed the terminal to non-canonical mode, and handled all keypresses ourselves. As a result, pressing certain keys may not have the desired consequences. However, all major keys were handled.
 
   
 Files and Function Headers:
@@ -112,3 +130,24 @@ main.c
 	  Inputs:
  	  char * buffer (command entered);
  	  =================*/
+	  
+	/*========== void insertString(char ** buffer, int indexTilde, char * value, int newSize);
+	  Generic function to help insert substring inside string
+	  Makes overall string lenghh bigger
+	  Used to replaced tildes inside buffer with actual path before running execvp
+	  Inputs:
+	  	char ** buffer (command entered)
+		int indextilde (location of ~)
+		char * value (home directory)
+		int newSize (how big copy of buffer should be)
+	   =================*/
+	   
+	/*========== void replaceExtraStringWithTilde(char ** buffer, char * valueToSearch, int newSize);
+	  Helps shortens lengthy directory in prompt with substituting tilde for home directory. 
+	  Inputs:
+		char ** buffer(current working directory)
+		char * valueToSearch - (current home directory)
+		int newSize (how big copy of buffer should be)
+
+	  =================*/
+
